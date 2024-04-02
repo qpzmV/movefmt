@@ -59,6 +59,10 @@ More detailed usage information is provided here:
 Alternatively, you can use the VS Code plugin `aptos-move-analyzer` by installing it. We have integrated `movefmt` into it, which allows you to format the current move file with just one right-click. The VS Code plugin `aptos-move-analyzer` can installed on the plugin market place with detailed guidance.
 > https://marketplace.visualstudio.com/items?itemName=MoveBit.aptos-move-analyzer
 
+## Reporting Issues
+
+If you find any problems in using the tool, please feel free to open an issue.
+
 ## License
 
 `movefmt` is released under the open source [Apache License](LICENSE)
