@@ -1,4 +1,4 @@
-**movefmt** is a formatting tool that is based on the Aptos Move compiler. 
+`movefmt` is a code formatting tool for Move on Aptos.
 
 ## About Us
 MoveBit is a security audit company for the Move ecosystem, with a vision to make the Move ecosystem the most secure Web3. 
@@ -6,27 +6,9 @@ MoveBit is a security audit company for the Move ecosystem, with a vision to mak
 The MoveBit team consists of security leaders in academia and enterprise world, with 10 years of security experience, and is the first blockchain security company to leverage formal verification in the Move ecosystem.
 
 ## Background
-A formatting tool, also known as a pretty-printer, prints the parser's AST of the corresponding language into a beautifully formatted string.
+An automated formatting tool makes code look uniform and pretty (in an opinionated way). A programmer can then focus on the logic of the program instead of formatting-related minutiae.
 
-
-Currently, the community has been discussing the need for a formatting tool for the move language, but due to the fact that implementing a formatting tool is not an easy task, there has not yet been a mature and user-friendly formatting tool for the move language.
-
-
-Based on this, MoveBit developed a move formatting tool for this purpose. It currently supports the formatting of Move code in Aptos Move projects.
-
-
-## Build
-
-**movefmt** requires Rust compiler to build. From the root directory, execute the following command.
-
-```
-$ git clone https://github.com/movebit/movefmt.git
-$ cd movefmt
-$ git checkout develop
-$ cargo build
-```
-
-The resulted binary `movefmt` can be found under the directory `target/debug`.
+There was a marked absence of a developer-friendly formatting tool in the move ecosystem. MoveBit has now filled this gap by developing `movefmt`.
 
 ## Install
 
@@ -44,10 +26,25 @@ This step can be done with the below command.
 $ export PATH=~/.cargo/bin:$PATH
 ```
 
+You can also use the latest pre-built binaries appropriate for your OS from [releases](https://github.com/movebit/movefmt/releases) instead of installing it via `cargo`.
+
+## Build
+
+Follow this step if you instead want to clone and build the tool from source. `movefmt` requires Rust compiler to build. From the root directory, execute the following command.
+
+```
+$ git clone https://github.com/movebit/movefmt.git
+$ cd movefmt
+$ git checkout develop
+$ cargo build
+```
+
+The resulting binary `movefmt` can be found under the directory `target/debug`.
+
 ## Usage
 If you wish to use this tool independently.
 ```
-# set env variable to see the log
+# optionally, set env variable to see the log
 export MOVEFMT_LOG=movefmt=DEBUG
 
 # get help msg
@@ -56,12 +53,12 @@ movefmt -h
 # format source file with printing verbose msg
 movefmt -v /path/to/your/file_name.move
 ```
-More usage you can see at:
+More detailed usage information is provided here:
 > https://github.com/movebit/movefmt/blob/develop/doc/how_to_use.md
 
-Alternatively, you can easily use the vscode plugin **aptos-move-analyzer** by installing it. We have integrated **movefmt** into it, which allows you to format the current move file with just one right-click. The VScode plugin **aptos-move-analyzer** is installed on the plugin market page with detailed guidance.
+Alternatively, you can use the VS Code plugin `aptos-move-analyzer` by installing it. We have integrated `movefmt` into it, which allows you to format the current move file with just one right-click. The VS Code plugin `aptos-move-analyzer` can installed on the plugin market place with detailed guidance.
 > https://marketplace.visualstudio.com/items?itemName=MoveBit.aptos-move-analyzer
 
 ## License
 
-**movefmt**  is released under the open source [Apache License](LICENSE)
+`movefmt` is released under the open source [Apache License](LICENSE)
