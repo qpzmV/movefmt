@@ -266,14 +266,11 @@ impl Format {
         next_t: Option<&TokenTree>,
         next_token: Tok,
     ) -> bool {
-        if matches!(
-            next_token,
-                | Tok::AmpAmp
-                | Tok::PipePipe
-        ) && self
-            .syntax_extractor
-            .let_extractor
-            .is_long_bin_op(next_t.unwrap().clone())
+        if matches!(next_token, |Tok::AmpAmp| Tok::PipePipe)
+            && self
+                .syntax_extractor
+                .let_extractor
+                .is_long_bin_op(next_t.unwrap().clone())
         {
             return true;
         }
@@ -302,9 +299,7 @@ impl Format {
                     r_exp_len_tuple
                 );
             }
-            if len_plus_cur_token + r_exp_len_tuple.1
-                > self.global_cfg.max_width()
-            {
+            if len_plus_cur_token + r_exp_len_tuple.1 > self.global_cfg.max_width() {
                 self.syntax_extractor
                     .bin_op_extractor
                     .record_long_op(r_exp_len_tuple.0);
@@ -1408,6 +1403,115 @@ impl Format {
         }
     }
 
+    fn need_inc_depth_when_cur_is_nested(
+        &self,
+        next_token: Option<&TokenTree>,
+        new_line_after: bool,
+    ) {
+        if new_line_after
+            && next_token.is_some()
+            && self
+                .syntax_extractor
+                .bin_op_extractor
+                .need_inc_depth_by_long_op(next_token.unwrap().clone())
+        // && self.format_context.borrow().cur_nested_kind.kind != NestKind_::ParentTheses
+        {
+            tracing::debug!(
+                "bin_op_extractor.need_inc_depth_by_long_op({:?})",
+                next_token.unwrap().simple_str()
+            );
+            self.inc_depth();
+        }
+
+        if new_line_after
+            && next_token.is_some()
+            && self
+                .syntax_extractor
+                .let_extractor
+                .need_inc_depth_by_long_op(next_token.unwrap().clone())
+            && self.format_context.borrow().cur_nested_kind.kind != NestKind_::ParentTheses
+        {
+            self.inc_depth();
+        }
+    }
+
+    fn need_inc_depth_when_cur_is_simple(
+        &self,
+        token: &TokenTree,
+        next_token: Option<&TokenTree>,
+        new_line_after: bool,
+    ) {
+        if new_line_after
+            && next_token.is_some()
+            && (self
+                .syntax_extractor
+                .bin_op_extractor
+                .need_inc_depth_by_long_op(token.clone())
+                || self
+                    .syntax_extractor
+                    .bin_op_extractor
+                    .need_inc_depth_by_long_op(next_token.unwrap().clone()))
+        // && self.format_context.borrow().cur_nested_kind.kind != NestKind_::ParentTheses
+        {
+            tracing::debug!(
+                "bin_op_extractor.need_inc_depth_by_long_op22({:?})",
+                next_token.unwrap().simple_str()
+            );
+            self.inc_depth();
+        }
+
+        // updated in 20240517: add condition `ParentTheses | Brace`
+        if new_line_after
+            && next_token.is_some()
+            && (self
+                .syntax_extractor
+                .let_extractor
+                .need_inc_depth_by_long_op(token.clone())
+                || self
+                    .syntax_extractor
+                    .let_extractor
+                    .need_inc_depth_by_long_op(next_token.unwrap().clone()))
+            && self.format_context.borrow().cur_nested_kind.kind != NestKind_::ParentTheses
+        {
+            self.inc_depth();
+        }
+    }
+
+    fn need_dec_depth_when_cur_is_simple(&self, token: &TokenTree) {
+        if self
+            .syntax_extractor
+            .bin_op_extractor
+            .need_dec_depth_by_long_op(token.clone())
+            > 0
+        {
+            tracing::debug!(
+                "bin_op_extractor.need_dec_depth_by_long_op({:?})",
+                token.simple_str()
+            );
+        }
+        let mut nested_break_line_depth = self
+            .syntax_extractor
+            .bin_op_extractor
+            .need_dec_depth_by_long_op(token.clone());
+        if self.format_context.borrow().cur_nested_kind.kind != NestKind_::ParentTheses {
+            nested_break_line_depth += self
+                .syntax_extractor
+                .let_extractor
+                .need_dec_depth_by_long_op(token.clone());
+        }
+        if nested_break_line_depth > 0 {
+            tracing::debug!(
+                "nested_break_line_depth[{:?}] = [{:?}]",
+                token.simple_str(),
+                nested_break_line_depth
+            );
+        }
+        while nested_break_line_depth > 0 {
+            self.dec_depth();
+            nested_break_line_depth -= 1;
+        }
+    }
+
     fn format_token_trees_internal(
         &self,
         token: &TokenTree,
@@ -1420,107 +1524,13 @@ impl Format {
                 kind: _,
                 note: _,
             } => {
-                if new_line_after
-                    && next_token.is_some()
-                    && self
-                        .syntax_extractor
-                        .bin_op_extractor
-                        .need_inc_depth_by_long_op(next_token.unwrap().clone())
-                // && self.format_context.borrow().cur_nested_kind.kind != NestKind_::ParentTheses
-                {
-                    tracing::debug!(
-                        "bin_op_extractor.need_inc_depth_by_long_op({:?})",
-                        next_token.unwrap().simple_str()
-                    );
-                    self.inc_depth();
-                }
-
-                if new_line_after
-                    && next_token.is_some()
-                    && self
-                        .syntax_extractor
-                        .let_extractor
-                        .need_inc_depth_by_long_op(next_token.unwrap().clone())
-                    && self.format_context.borrow().cur_nested_kind.kind != NestKind_::ParentTheses
-                {
-                    self.inc_depth();
-                }
+                self.need_inc_depth_when_cur_is_nested(next_token, new_line_after);
                 self.format_nested_token(token, next_token);
             }
             TokenTree::SimpleToken { .. } => {
-                if new_line_after
-                    && next_token.is_some()
-                    && (self
-                        .syntax_extractor
-                        .bin_op_extractor
-                        .need_inc_depth_by_long_op(token.clone())
-                        || self
-                            .syntax_extractor
-                            .bin_op_extractor
-                            .need_inc_depth_by_long_op(next_token.unwrap().clone()))
-                // && self.format_context.borrow().cur_nested_kind.kind != NestKind_::ParentTheses
-                {
-                    tracing::debug!(
-                        "bin_op_extractor.need_inc_depth_by_long_op22({:?})",
-                        next_token.unwrap().simple_str()
-                    );
-                    self.inc_depth();
-                }
-
-                // updated in 20240517: add condition `ParentTheses | Brace`
-                if new_line_after
-                    && next_token.is_some()
-                    && (self
-                        .syntax_extractor
-                        .let_extractor
-                        .need_inc_depth_by_long_op(token.clone())
-                        || self
-                            .syntax_extractor
-                            .let_extractor
-                            .need_inc_depth_by_long_op(next_token.unwrap().clone()))
-                    && self.format_context.borrow().cur_nested_kind.kind != NestKind_::ParentTheses
-                {
-                    self.inc_depth();
-                }
+                self.need_inc_depth_when_cur_is_simple(token, next_token, new_line_after);
                 self.format_simple_token(token, next_token, new_line_after);
-
-                // if self.format_context.borrow().cur_nested_kind.kind != NestKind_::ParentTheses
-                {
-                    if self
-                        .syntax_extractor
-                        .bin_op_extractor
-                        .need_dec_depth_by_long_op(token.clone())
-                        > 0
-                    {
-                        tracing::debug!(
-                            "bin_op_extractor.need_dec_depth_by_long_op({:?})",
-                            token.simple_str()
-                        );
-                    }
-                    let mut nested_break_line_depth = self
-                        .syntax_extractor
-                        .bin_op_extractor
-                        .need_dec_depth_by_long_op(token.clone());
-                    nested_break_line_depth += self
-                        .syntax_extractor
-                        .let_extractor
-                        .need_dec_depth_by_long_op(token.clone());
-                    // let mut nested_break_line_depth = self
-                    //     .syntax_extractor
-                    //     .let_extractor
-                    //     .need_dec_depth_by_long_op(token.clone());
-                    if nested_break_line_depth > 0 {
-                        tracing::debug!(
-                            "nested_break_line_depth[{:?}] = [{:?}]",
-                            token.simple_str(),
-                            nested_break_line_depth
-                        );
-                    }
-                    while nested_break_line_depth > 0 {
-                        self.dec_depth();
-                        nested_break_line_depth -= 1;
-                    }
-                }
+                self.need_dec_depth_when_cur_is_simple(token);
             }
         }
     }
